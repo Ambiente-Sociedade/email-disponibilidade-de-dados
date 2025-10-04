@@ -4,6 +4,7 @@ lote_para_enviar <- 6
 
 # Send email with passwords
 library(gmailr)
+
 # Ler arquivo com as informações para enviar
 googlesheets4::gs4_auth(email = "milz.bea@gmail.com")
 
@@ -13,6 +14,8 @@ df_info <- googlesheets4::read_sheet(caminho_drive) |>
   janitor::clean_names()
 
 df_info_prep <- df_info |>
+  dplyr::mutate(dados_email_enviado = as.character(dados_email_enviado)) |>
+  dplyr::filter(dados_email_enviado == "NULL") |>
   dplyr::filter(dados_respondido != TRUE, lote == lote_para_enviar) |>
   dplyr::mutate(
     first_name = stringr::str_split(
@@ -36,8 +39,6 @@ gm_auth('milz.bea@gmail.com')
 # Function to send email
 
 send_email_gmail <- function(df_row) {
-  browser()
-
   gm_message <- glue::glue(paste(
     readLines("template-email.html"),
     collapse = "\n"
@@ -57,7 +58,7 @@ send_email_gmail <- function(df_row) {
   gm_rascunho <- gm_mime() |>
     gm_to(emails_enviar) |>
     gm_from("milz.bea@gmail.com") |>
-    #gm_cc("revistaambienteesociedade@gmail.com") |>
+    gm_cc("revistaambienteesociedade@gmail.com") |>
     gm_subject("Envio da Declaração de Disponibilidade de Dados SciELO") |>
     gm_html_body(gm_message) |>
     gm_attach_file(
@@ -68,17 +69,17 @@ send_email_gmail <- function(df_row) {
 
   gm_send_draft(draft)
 
-  usethis::ui_done("Email enviado para: {df_person$name}")
+  usethis::ui_done("Email enviado para: {df_row$id}")
 }
 
 
 # Testing if works:
-df_person <- df_info_prep[1, ]
-send_email_gmail(df_person)
+# df_person <- df_info_prep[1, ]
+# send_email_gmail(df_person)
 
 # Send email to all persons in the list
-list_password <- df_password |>
+list_emails <- df_info_prep |>
   tibble::rowid_to_column() |>
   dplyr::group_split(rowid)
 
-purrr::map(list_password, send_email_gmail)
+purrr::map(list_emails, send_email_gmail)
