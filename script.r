@@ -1,3 +1,7 @@
+# LOTE PARA ENVIAR
+
+lote_para_enviar <- 6
+
 # Send email with passwords
 library(gmailr)
 # Ler arquivo com as informações para enviar
@@ -9,7 +13,7 @@ df_info <- googlesheets4::read_sheet(caminho_drive) |>
   janitor::clean_names()
 
 df_info_prep <- df_info |>
-  dplyr::filter(dados_respondido != TRUE) |>
+  dplyr::filter(dados_respondido != TRUE, lote == lote_para_enviar) |>
   dplyr::mutate(
     first_name = stringr::str_split(
       autor_correspondente,
@@ -19,6 +23,7 @@ df_info_prep <- df_info |>
       stringr::str_to_title(),
     data_maxima = format(Sys.Date() + 14, "%d/%m/%Y")
   )
+
 
 # Authenticate with gmail- ------
 
@@ -43,8 +48,8 @@ send_email_gmail <- function(df_row) {
     purrr::pluck(1) |>
     stringr::str_trim()
 
-  # TEMP
-  emails_enviar <- c("milz.bea@gmail.com", "beatriz.milz@icloud.com")
+  # Para testes
+  # emails_enviar <- c("milz.bea@gmail.com", "beatriz.milz@icloud.com")
 
   # TODO Futuro: função de validar email?
 
