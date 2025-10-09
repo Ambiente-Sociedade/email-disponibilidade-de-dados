@@ -1,6 +1,6 @@
 # LOTE PARA ENVIAR
 
-lote_para_enviar <- 6
+lote_para_enviar <- 7
 
 # Send email with passwords
 library(gmailr)
@@ -24,7 +24,10 @@ df_info_prep <- df_info |>
       simplify = TRUE
     )[, 1] |>
       stringr::str_to_title(),
-    data_maxima = format(Sys.Date() + 14, "%d/%m/%Y")
+    data_maxima = format(Sys.Date() + 14, "%d/%m/%Y"),
+    nome_arquivo = glue::glue(
+      "L{lote_para_enviar}_n{stringr::str_pad(no, width = 2, pad = '0')}_{id}.docx"
+    )
   )
 
 
@@ -49,6 +52,11 @@ send_email_gmail <- function(df_row) {
     purrr::pluck(1) |>
     stringr::str_trim()
 
+  fs::file_copy(
+    "formulario_declaracao_disponibilidade_dados_PT.docx",
+    new_path = df_row$nome_arquivo
+  )
+
   # Para testes
   # emails_enviar <- c("milz.bea@gmail.com", "beatriz.milz@icloud.com")
 
@@ -62,12 +70,14 @@ send_email_gmail <- function(df_row) {
     gm_subject("Envio da Declaração de Disponibilidade de Dados SciELO") |>
     gm_html_body(gm_message) |>
     gm_attach_file(
-      filename = "formulario_declaracao_disponibilidade_dados_PT.docx"
+      filename = df_row$nome_arquivo
     )
 
   draft <- gm_create_draft(gm_rascunho)
 
   gm_send_draft(draft)
+
+  fs::file_delete(df_row$nome_arquivo)
 
   usethis::ui_done("Email enviado para: {df_row$id}")
 }
